@@ -31,6 +31,9 @@ def setVolume_map(vol, inc, chmap):
 
 if sys.argv[1] == 'sink':
   sink_id=int(sys.argv[2])
+  if sys.argv[3] == 'setvolume':
+    import os
+    os.system("pacmd set-sink-volume {sink_id} 0".format(**locals()))
 
   sinks=pulse.pulse_sink_list()
   selected_sink=sinks[sink_id]
