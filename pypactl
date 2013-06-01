@@ -9,104 +9,58 @@ from palib import PulseObj, \
                   PulseVolume
 
 
-def balanceSetup(volumeList):
-    list = [int(vol) for vol in volumeList]
-    freeSlots = 6 - len(list)
+# fills free slots in balance with default values.
+# channels: front left, front right, rear left, rear right, front center, subwoofer
+def balanceSetup(balance):
+    levels = [int(channel) for channel in balance]
+    freeSlots = 6 - len(levels)
     if freeSlots == 5:
         # only one value: set all channels to the same value.
-        list *= 6
+        levels *= 6
     else:
         # less than 6 values: set remaining channels to 100.
-        list += [100] * freeSlots
-    print "Setting volume levels to: %s" % list
-    return list
+        levels += [100] * freeSlots
+    print "Setting volume levels to: %s" % levels
+    return levels
 
 
-def incVolume_map(vol, inc, chmap):
-  vol_max=max(vol.values)
-  vol_max=int(vol_max+inc)
-  for i in range(0,vol.channels):
-    vol.values[i]=chmap[i]*vol_max/100
-  return vol
-
-   
-def setVolume_map(vol, inc, chmap):
-  for i in range(0,vol.channels):
-    vol.values[i]=chmap[i]*vol/100
-  return vol
+# changes a sink's volume accordingly to a given balance and delta.
+def changeVolume(sink, delta):
+    volume = sink.volume
+    # calculate maximal change percentage. 
+    percentage = delta / float(max(volume.values))
+    for channel in range(0, volume.channels):
+        volume.values[channel] += volume.values[channel] * percentage
+    return volume
 
 
+# sets a sink's volume to a given balance.  
+def setVolume(sink, balance):
+    volume = sink.volume
+    for channel in range(0, volume.channels):
+        volume.values[channel] = balance[channel]
+    return volume
+
+
+# initialize the main PulseObj. 
 pulse = PulseObj("pactl.py", None, True)
-
-# custom channel volumes for volume
-# front left, front right, rear left, rear right, front center, subwoofer
-vol4channels = balanceSetup(sys.argv[4:9])
 
 
 if sys.argv[1] == 'sink':
-  sink_id=int(sys.argv[2])
-  if sys.argv[3] == 'setvolume':
-    import os
-    os.system("pacmd set-sink-volume {sink_id} 0".format(**locals()))
+    sinks = pulse.pulse_sink_list()
+    sink = sinks[int(sys.argv[2])]
 
-  sinks=pulse.pulse_sink_list()
-  selected_sink=sinks[sink_id]
+    if sys.argv[3] == 'toggle':
+        if sink.mute == 0: 
+            pulse.pulse_mute_sink(sink.index)
+        else:
+            pulse.pulse_unmute_sink(sink.index)
 
-  if sys.argv[3] == 'toggle':
-      if selected_sink.mute == 0: 
-	pulse.pulse_mute_sink(selected_sink.index)
-      else:
-	pulse.pulse_unmute_sink(selected_sink.index)
-	
-  elif sys.argv[3] == 'incvolume':
-    vol_step=int(sys.argv[4])
-    curvol = selected_sink.volume
-    newvol=incVolume_map(curvol,int(vol_step),vol4channels)
-    pulse.pulse_set_sink_volume(selected_sink.index,newvol)
+    elif sys.argv[3] == 'incvolume':
+          newVolume = changeVolume(sink, int(sys.argv[4]))
+          pulse.pulse_set_sink_volume(sink.index, newVolume)
 
-  elif sys.argv[3] == 'setvolume':
-    curvol = selected_sink.volume
-    newvol=incVolume_map(curvol,int(sys.argv[4]),vol4channels)
-    pulse.pulse_set_sink_volume(selected_sink.index,newvol)
-
-elif sys.argv[1] == 'test':
-  curvol = selected_sink.volume
-  print curvol.values
+    elif sys.argv[3] == 'setvolume':
+          newVolume = setVolume(sink, balanceSetup(sys.argv[4:9]))
+          pulse.pulse_set_sink_volume(sink.index, newVolume)
   
-  curvol_max=max(curvol.values)
-  
-  print curvol_max
-  curvol_max=int(curvol_max+volstep)
-  print curvol_max
-  
-  for i in range(0,curvol.channels):
-    curvol.values[i]=channel_map[i]*curvol_max/100
-  
-  print "---";
-  
-  print curvol.values
-  #print curvol
-  pulse.pulse_set_sink_volume(selected_sink.index,curvol)
-  
-elif sys.argv[1] == 'debug':
-  #print selected_sink.channel_map.channels
-  #channles_map = selected_sink.channel_map.map
-  #for ch in channles_map:
-    #print ch
-
-  curvol = selected_sink.volume
-  #print curvol.channel
-  
-  #for i in range(0,curvol.channels-1):
-    #print curvol.values[i]
-  #curvol.printDebug()
-  #print volume.channels
-  #curvol.incVolume(int(2))
-  #curvol.incVolume(int(-2))
-
-  #pulse.pulse_set_sink_volume(selected_sink.index,curvol)
-  #pulse_set_sink_input_volume
-  sinks_all=pulse.pulse_sink_list()
-  for source in sinks_all:
-    print source
-  #print selected_sink.index
