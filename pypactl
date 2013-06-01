@@ -45,7 +45,8 @@ pulse = PulseObj("pactl.py", None, True)
 
 if sys.argv[1] == 'sink':
     sinks = pulse.pulse_sink_list()
-    sink = sinks[int(sys.argv[2])]
+    sink = sinks[int(sys.argv[2])]    
+    streams = pulse.pulse_sink_input_list()
 
     if sys.argv[3] == 'toggle':
         if sink.mute == 0: 
@@ -65,5 +66,7 @@ if sys.argv[1] == 'sink':
           quit()
           
         print "Setting volume levels to: %s" % newVolume.values
+        for stream in streams:
+            pulse.pulse_set_sink_input_volume(stream.index, newVolume)
         pulse.pulse_set_sink_volume(sink.index, newVolume)
   
