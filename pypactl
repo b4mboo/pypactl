@@ -20,17 +20,14 @@ def balanceSetup(balance):
     else:
         # less than 6 values: set remaining channels to 100.
         levels += [100] * freeSlots
-    print "Setting volume levels to: %s" % levels
     return levels
 
 
-# changes a sink's volume accordingly to a given balance and delta.
+# changes a sink's volume accordingly to a given delta.
 def changeVolume(sink, delta):
     volume = sink.volume
-    # calculate maximal change percentage. 
-    percentage = delta / float(max(volume.values))
     for channel in range(0, volume.channels):
-        volume.values[channel] += volume.values[channel] * percentage
+        volume.values[channel] = int(volume.values[channel] + delta)
     return volume
 
 
@@ -38,7 +35,7 @@ def changeVolume(sink, delta):
 def setVolume(sink, balance):
     volume = sink.volume
     for channel in range(0, volume.channels):
-        volume.values[channel] = balance[channel]
+        volume.values[channel] = int(balance[channel])
     return volume
 
 
@@ -56,11 +53,17 @@ if sys.argv[1] == 'sink':
         else:
             pulse.pulse_unmute_sink(sink.index)
 
-    elif sys.argv[3] == 'incvolume':
-          newVolume = changeVolume(sink, int(sys.argv[4]))
-          pulse.pulse_set_sink_volume(sink.index, newVolume)
+    else:
+        if sys.argv[3] == 'incvolume':
+            newVolume = changeVolume(sink, int(sys.argv[4]))
 
-    elif sys.argv[3] == 'setvolume':
-          newVolume = setVolume(sink, balanceSetup(sys.argv[4:9]))
-          pulse.pulse_set_sink_volume(sink.index, newVolume)
+        elif sys.argv[3] == 'setvolume':
+            newVolume = setVolume(sink, balanceSetup(sys.argv[4:9]))
+        
+        else:
+          print "Unknown command '%s'." % sys.argv[3]
+          quit()
+          
+        print "Setting volume levels to: %s" % newVolume.values
+        pulse.pulse_set_sink_volume(sink.index, newVolume)
   
