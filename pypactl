@@ -65,7 +65,7 @@ if sys.argv[1] == 'sink':
           quit()
           
         print "Setting volume levels to: %s" % newVolume.values
+        pulse.pulse_set_sink_volume(sink.index, newVolume)
         for stream in pulse.pulse_sink_input_list():
             pulse.pulse_set_sink_input_volume(stream.index, newVolume)
-        pulse.pulse_set_sink_volume(sink.index, newVolume)
   
