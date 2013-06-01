@@ -3,31 +3,45 @@
 
 import sys
 from palib import PulseObj, \
-                                      PulseSink, \
-                                      PulseSinkInfo, \
-                                      PulseSinkInputInfo, \
-                                      PulseVolume
+                  PulseSink, \
+                  PulseSinkInfo, \
+                  PulseSinkInputInfo, \
+                  PulseVolume
+
+
+def balanceSetup(volumeList):
+    list = [int(vol) for vol in volumeList]
+    freeSlots = 6 - len(list)
+    if freeSlots == 5:
+        # only one value: set all channels to the same value.
+        list *= 6
+    else:
+        # less than 6 values: set remaining channels to 100.
+        list += [100] * freeSlots
+    print "Setting volume levels to: %s" % list
+    return list
+
+
+def incVolume_map(vol, inc, chmap):
+  vol_max=max(vol.values)
+  vol_max=int(vol_max+inc)
+  for i in range(0,vol.channels):
+    vol.values[i]=chmap[i]*vol_max/100
+  return vol
+
+   
+def setVolume_map(vol, inc, chmap):
+  for i in range(0,vol.channels):
+    vol.values[i]=chmap[i]*vol/100
+  return vol
+
 
 pulse = PulseObj("pactl.py", None, True)
 
 # custom channel volumes for volume
 # front left, front right, rear left, rear right, front center, subwoofer
-vol4channels = [35,45,100,50,65,45]
+vol4channels = balanceSetup(sys.argv[4:9])
 
-def incVolume_map(vol, inc, chmap):
-  vol_max=max(vol.values)
-  vol_max=int(vol_max+inc)
-  
-  for i in range(0,vol.channels):
-    vol.values[i]=chmap[i]*vol_max/100
-  
-  return vol
-  
-def setVolume_map(vol, inc, chmap):
-  for i in range(0,vol.channels):
-    vol.values[i]=chmap[i]*vol/100
-  
-  return vol
 
 if sys.argv[1] == 'sink':
   sink_id=int(sys.argv[2])
