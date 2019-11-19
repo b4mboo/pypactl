@@ -107,6 +107,7 @@ class PulseVolume:
 
 class PulseVolumeCtypes(PulseVolume):
   def __init__(self, pa_cvolume):
+    PulseVolume.__init__(self)
     self.channels = pa_cvolume.channels
     self.values   = map(lambda x: (math.ceil(float(x) * 100 / PA_VOLUME_NORM)),
                         pa_cvolume.values[0:self.channels])
